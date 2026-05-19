@@ -1,0 +1,10 @@
+[package]
+name = "uart-prompt-console"
+version = "0.1.0"
+edition = "2021"
+description = "A UART/serial console that lets you pause noisy logs at a prompt, type a command, then flush and send."
+publish = false
+
+[dependencies]
+libc = "0.2"
+serialport = "4.9"
