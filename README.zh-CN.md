@@ -45,6 +45,14 @@ hush -b 3000000
 
 日志文件保存 UART 原始字节。屏幕显示层做的换行整理不会改动日志内容。
 
+主会话还会基于串口设备名打开一个本地 monitor socket。以上面的命令为例，另一个终端可以这样接入：
+
+```bash
+hush monitor usbmodem01234567895
+```
+
+monitor 窗口会镜像主 `hush` 屏幕，并把自己的键盘输入转发给主会话。它不会自己打开串口设备。
+
 ## 交互模型
 
 正常模式：
@@ -87,12 +95,74 @@ Ctrl-T l     清屏
 Ctrl-T ?     显示帮助
 ```
 
+## 监控窗口
+
+先在拥有串口设备的终端里正常启动 `hush`：
+
+```bash
+hush /dev/cu.usbmodem01234567895 -b 3000000
+```
+
+然后在另一个终端接入：
+
+```bash
+hush monitor usbmodem01234567895
+```
+
+在 monitor 窗口里输入的内容会转发到主 `hush` 会话，并走主会话同一套 prompt-aware 状态机。`Ctrl-T` 组合键也会转发，所以 `Ctrl-T r`、`Ctrl-T l`、`Ctrl-T ?`、`Ctrl-T q` 都是在控制主 `hush` 会话。
+
+如果只想退出当前 monitor 窗口，按 `Ctrl-]`。
+
+如果主 `hush` 会话退出，或者主终端被关掉，已接入的 monitor 窗口会在 monitor socket 断开后自动退出。
+
+只读监控可以这样打开：
+
+```bash
+hush monitor --read-only usbmodem01234567895
+```
+
+列出当前可 monitor 的 session：
+
+```bash
+hush sessions
+hush monitor --list
+```
+
+启动主会话时也可以指定稳定的 session 名：
+
+```bash
+hush /dev/cu.usbmodem01234567895 -b 3000000 --session dut-a
+hush monitor dut-a
+```
+
+## Agent 协作流程
+
+AI 辅助调试时，推荐由用户自己的真实终端持有串口，Agent 只通过 monitor 接入：
+
+```bash
+# 用户终端
+hush /dev/cu.usbmodem01234567895 -b 3000000 --session dut-c
+
+# Agent 终端
+hush sessions
+hush monitor dut-c
+```
+
+Agent 可以在 monitor 窗口输入命令，命令会经由主 `hush` 会话发送到设备；用户在主终端里能看到 Agent 输入了什么、设备返回了什么。因为两个窗口共享同一条输入流，不要两边同时打字。
+
+如果只想让 Agent 旁观、不允许输入，用：
+
+```bash
+hush monitor --read-only dut-c
+```
+
 ## 参数
 
 ```text
 -d <device>              串口设备。也可以作为位置参数传入。
 -b <baud>                波特率。默认：3000000。
 -l <logfile>             日志文件路径。默认：/tmp/hush-*.log。
+--session <name>         monitor session 名。默认：串口设备 basename。
 --newline cr|lf|crlf     命令行结束符。默认：cr。
 ```
 

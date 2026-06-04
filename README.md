@@ -54,6 +54,16 @@ By default the tool writes a temporary log file under `/tmp`, for example:
 The log file keeps the original UART bytes. Display-only cleanup does not modify
 the log.
 
+The primary session also opens a local monitor socket based on the serial device
+basename. For the command above, another terminal can attach with:
+
+```bash
+hush monitor usbmodem01234567895
+```
+
+The monitor window mirrors the primary `hush` screen and forwards its keyboard
+input into the primary session. It does not open the serial device itself.
+
 ## Interaction Model
 
 Normal mode:
@@ -96,12 +106,78 @@ Ctrl-T l       Clear screen
 Ctrl-T ?       Show help
 ```
 
+## Monitor Windows
+
+Start `hush` normally in the terminal that owns the serial device:
+
+```bash
+hush /dev/cu.usbmodem01234567895 -b 3000000
+```
+
+Then attach from another terminal:
+
+```bash
+hush monitor usbmodem01234567895
+```
+
+Input typed in the monitor is forwarded to the primary `hush` session and uses
+the same prompt-aware state machine as the primary terminal. `Ctrl-T` sequences
+are forwarded too, so `Ctrl-T r`, `Ctrl-T l`, `Ctrl-T ?`, and `Ctrl-T q` control
+the primary `hush` session.
+
+To detach only the monitor window, press `Ctrl-]`.
+
+If the primary `hush` session exits or its terminal is closed, attached monitor
+windows exit automatically after the monitor socket closes.
+
+For a view-only monitor:
+
+```bash
+hush monitor --read-only usbmodem01234567895
+```
+
+To list active monitorable sessions:
+
+```bash
+hush sessions
+hush monitor --list
+```
+
+You can choose a stable session name when starting the primary session:
+
+```bash
+hush /dev/cu.usbmodem01234567895 -b 3000000 --session dut-a
+hush monitor dut-a
+```
+
+## Shared Agent Workflow
+
+For AI-assisted debugging, keep the primary serial terminal under the user's
+control and let the agent attach through a monitor:
+
+```bash
+# User terminal
+hush /dev/cu.usbmodem01234567895 -b 3000000 --session dut-c
+
+# Agent terminal
+hush sessions
+hush monitor dut-c
+```
+
+The agent can type commands through the monitor and the user can watch every
+command and device response in the primary terminal. Because both terminals feed
+the same input stream, avoid typing from both windows at the same time.
+
+Use `hush monitor --read-only dut-c` when the agent should observe without
+driving the device.
+
 ## Options
 
 ```text
 -d <device>              Serial device. Positional <device> is also accepted.
 -b <baud>                Baud rate. Default: 3000000.
 -l <logfile>             Log file path. Default: /tmp/hush-*.log.
+--session <name>         Monitor session name. Default: serial device basename.
 --newline cr|lf|crlf     Command line ending. Default: cr.
 ```
 
