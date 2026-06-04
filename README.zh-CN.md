@@ -24,6 +24,20 @@ cargo install --path .
 cargo build --release
 ```
 
+安装随仓库分发的 Codex skill：
+
+```bash
+scripts/install-codex-skill.sh
+```
+
+默认会安装到 `$CODEX_HOME/skills/hush-uart-console`；如果没有设置
+`CODEX_HOME`，则安装到 `~/.codex/skills/hush-uart-console`。也可以指定其他位置：
+
+```bash
+scripts/install-codex-skill.sh --dest /path/to/skills
+scripts/install-codex-skill.sh --target /path/to/hush-uart-console --force
+```
+
 ## 使用
 
 ```bash

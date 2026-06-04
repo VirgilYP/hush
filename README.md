@@ -32,6 +32,21 @@ Or build a release binary:
 cargo build --release
 ```
 
+To install the bundled Codex skill for UART monitor workflows:
+
+```bash
+scripts/install-codex-skill.sh
+```
+
+By default this installs to `$CODEX_HOME/skills/hush-uart-console`, or
+`~/.codex/skills/hush-uart-console` when `CODEX_HOME` is not set. To install the
+skill somewhere else:
+
+```bash
+scripts/install-codex-skill.sh --dest /path/to/skills
+scripts/install-codex-skill.sh --target /path/to/hush-uart-console --force
+```
+
 ## Usage
 
 ```bash
