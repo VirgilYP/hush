@@ -100,6 +100,7 @@ monitor 窗口会镜像主 `hush` 屏幕，并把自己的键盘输入转发给�
 ```text
 空 Enter     发送换行，等待 '$'，然后停在 prompt
 Enter        刷出暂停输出，然后发送当前输入行
+方向键 ↑ / ↓  选择持久化历史中更旧 / 更新的命令
 Ctrl-U       清空当前输入
 Backspace    删除一个输入字符
 Ctrl-C       向设备发送 Ctrl-C
@@ -183,5 +184,6 @@ hush monitor --read-only dut-c
 ## 说明
 
 - 当前 prompt 检测使用 `$` 字符。
+- 命令历史会跨 `hush` 会话持久化保存：设置了 `XDG_STATE_HOME` 时使用 `$XDG_STATE_HOME/hush/history`，否则使用 `~/.local/state/hush/history`。每次启动会载入最近 1000 条命令。浏览到最新命令后继续按 ↓，会恢复开始浏览历史前尚未发送的输入草稿。
 - 默认命令行结束符是 carriage return，也就是 `cr` / `\r`，这是很多嵌入式 UART shell 的常见输入方式。
 - 如果你的 shell 需要 LF 或 CRLF，可以使用 `--newline lf` 或 `--newline crlf`。

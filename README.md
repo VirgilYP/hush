@@ -112,6 +112,7 @@ This keeps old background logs from appearing after the command response.
 ```text
 Empty Enter    Send a newline, wait for '$', then pause at the prompt
 Enter          Flush paused output, then send the typed line
+Up / Down      Select an older / newer command from persistent history
 Ctrl-U         Clear current input
 Backspace      Delete one input character
 Ctrl-C         Send Ctrl-C to the device
@@ -199,6 +200,11 @@ driving the device.
 ## Notes
 
 - Prompt detection currently uses the `$` character.
+- Command history persists across `hush` sessions in
+  `$XDG_STATE_HOME/hush/history`, or `~/.local/state/hush/history` when
+  `XDG_STATE_HOME` is unset. The most recent 1000 commands are loaded into each
+  session. Pressing Down past the newest command restores the input draft from
+  before navigation.
 - The default command line ending is carriage return (`cr`, `\r`), which is
   common for embedded UART shells.
 - If your shell expects LF or CRLF, use `--newline lf` or `--newline crlf`.

@@ -98,6 +98,7 @@ hush monitor dut-c
 normal mode: UART output streams live
 empty Enter: send newline, wait for '$', then pause at the prompt
 type command
+Up/Down: select an older/newer command from persistent history
 Enter: flush paused output first, then send the typed command
 Ctrl-T r: resume realtime output
 Ctrl-T q: quit the primary hush session
@@ -105,3 +106,13 @@ monitor input: forwarded to the primary hush session
 monitor Ctrl-]: detach only the monitor window
 monitor auto-exit: primary hush exited or terminal closed
 ```
+
+## Command history
+
+Commands sent with `Enter` persist across `hush` restarts. `Up` selects older
+commands, `Down` selects newer commands, and pressing `Down` past the newest
+command restores the unsent draft from before history navigation.
+
+History is stored at `$XDG_STATE_HOME/hush/history` when `XDG_STATE_HOME` is set,
+otherwise at `~/.local/state/hush/history`. Each session loads the most recent
+1000 non-empty commands.
