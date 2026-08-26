@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Hush",
+  "version": "0.2.0",
+  "identifier": "com.pawpaw.hush",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Hush",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg"],
+    "category": "DeveloperTool",
+    "shortDescription": "A UART and USB HID console with reusable command banks.",
+    "longDescription": "Hush is a macOS-first embedded-device console for UART and USB HID sessions with editable Text and HEX command slots.",
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
+  }
+}

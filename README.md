@@ -10,6 +10,74 @@ type shell commands. The console can briefly stop the log stream at a prompt,
 let you type a command, flush the paused logs first, and then send your command
 to the device.
 
+The repository also contains a macOS-first Tauri GUI with a UART / USB HID receive terminal,
+manual send bar, and an SSCOM-style editable command bank.
+
+## macOS GUI
+
+The GUI keeps UART / HID ownership and byte handling in Rust. The webview is only
+responsible for presentation and invokes the shared `hush` library instead of
+launching or scraping the CLI as a subprocess.
+
+```bash
+cd apps/hush-gui
+npm install
+npm run tauri dev
+```
+
+Build a local macOS application bundle:
+
+```bash
+npm run tauri build -- --bundles app
+open src-tauri/target/release/bundle/macos/Hush.app
+```
+
+The development bundle is ad-hoc signed. External distribution still requires
+an Apple Developer signature and notarization.
+
+### DM30 defaults
+
+The first-run command bank is `DM30`:
+
+- UART1: 115200 baud, 8 data bits, no parity, 1 stop bit
+- a top-level `UART` / `USB HID` selector; HID lists legacy DM30 `1ACC:1A61`
+  and current DM30 `1ACC:1AEC`, uses
+  report ID 1, and accepts up to 63 command bytes including the line ending
+- text line ending: CR
+- 14 editable commands: power on, full configuration report, documented
+  gain/report-off commands, and two explicitly warned IN1 32.0→31.9 dB
+  transition-reproduction commands
+- one-click `Silence UART reports` sends the six module-specific `rpsw=off`
+  commands without changing gain
+- a safe `-200..0 dB` gain test slider selects one of the ten documented gain
+  module IDs and updates the matching editable command; `Apply` performs the send
+- an Algorithm selector groups every active `sw=on/off` module by audio path and
+  sends only source-verified MID/switch combinations
+- `/dev/cu.*` callout devices are shown on macOS; saved `/dev/tty.*` peers are
+  migrated when a matching callout device exists
+
+All slots remain editable. Text and HEX slots can be added, removed, or
+reordered. `Load` and `Export` exchange a versioned JSON command-bank file that
+contains the bank name and slots, but deliberately excludes machine-specific
+device paths.
+
+The current DM30 firmware accepts `set mid=-2,power=on` from UART / shell only,
+and USB HID does not enumerate until the unit is powered. Hush disables that
+slot in HID mode; the remaining DSP commands share the same editable slots.
+
+The receive stream is forwarded every few milliseconds and appended on the
+next display frame, matching the continuous feel of the CLI without rebuilding
+the entire terminal DOM. Raw UART bytes are written to `/tmp/hush-gui-*.log`;
+raw HID input reports are written to `/tmp/hush-gui-hid-*.log`.
+Pausing or clearing the display does not modify either log.
+
+Only one program can own a serial device. Close any CLI terminal that already
+has the port open before connecting the GUI.
+
+Scrolling the receive view away from the bottom activates Smart Pause before
+new data can steal the scroll position. Returning to the bottom resumes only a
+scroll-triggered pause; a manual pause remains manual.
+
 ## Relationship to tio
 
 This tool is intended as a small wrapper around the `tio` workflow, not as a

@@ -1,4 +1,5 @@
-use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
+use hush::{open_serial_port, FlowControlSetting, ParitySetting, SerialSettings};
+use serialport::SerialPort;
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::{self, Read, Write};
@@ -499,13 +500,14 @@ fn parse_session_args(args: &[String]) -> Result<Command, i32> {
 }
 
 fn open_serial(config: &Config) -> Result<Box<dyn SerialPort>, serialport::Error> {
-    serialport::new(&config.device, config.baud)
-        .data_bits(DataBits::Eight)
-        .flow_control(FlowControl::None)
-        .parity(Parity::None)
-        .stop_bits(StopBits::One)
-        .timeout(Duration::from_millis(50))
-        .open()
+    open_serial_port(&SerialSettings {
+        port_name: config.device.clone(),
+        baud_rate: config.baud,
+        data_bits: 8,
+        stop_bits: 1,
+        parity: ParitySetting::None,
+        flow_control: FlowControlSetting::None,
+    })
 }
 
 #[derive(Default)]

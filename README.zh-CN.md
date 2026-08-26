@@ -6,6 +6,50 @@
 
 它的核心目标是：在看到设备 prompt 后暂停后台刷屏，让你稳定输入命令；发送命令前先把暂停期间缓存的旧日志刷出来，再把命令发给设备，避免旧日志混到命令响应后面。
 
+仓库还包含一个 macOS 优先的 Tauri GUI，提供 UART / USB HID 接收终端、手动发送栏和类似 SSCOM“多字符串”的可编辑命令集。
+
+## macOS GUI
+
+GUI 的 UART / HID 设备所有权和字节处理都在 Rust 中完成。WebView 只负责显示，UART 直接调用共享的 `hush` library，不会启动或解析 CLI 子进程。
+
+```bash
+cd apps/hush-gui
+npm install
+npm run tauri dev
+```
+
+构建本机 macOS `.app`：
+
+```bash
+npm run tauri build -- --bundles app
+open src-tauri/target/release/bundle/macos/Hush.app
+```
+
+当前开发包是 ad-hoc 签名；如果要发给其他 Mac 使用，仍需 Apple Developer 签名和公证。
+
+### DM30 缺省配置
+
+第一次运行会加载 `DM30` 命令集：
+
+- UART1：115200 波特率、8 数据位、无校验、1 停止位
+- 顶部可切换 `UART` / `USB HID`；HID 只列出旧版 DM30 `1ACC:1A61` 和新版 `1ACC:1AEC`，使用 Report ID 1，每条命令（含结束符）最多 63 字节
+- 文本行结束符：CR
+- 14 条可编辑命令：上电、上报全部配置、DM30 独立调试增益/关闭电平上报，以及两条带警告标识的 IN1 32.0→31.9 dB 问题复现命令
+- `Silence UART reports` 一键依次发送 6 条模块级 `rpsw=off`，不会修改增益
+- `-200..0 dB` 安全增益测试滑块可以选择 10 个增益模块之一，并同步修改对应的可编辑命令；点击 `Apply` 才真正发送
+- Algorithm 下拉按音频链路分组列出当前启用且真实支持 `sw=on/off` 的模块实例，可直接发送 ON/OFF
+- macOS 只列出 `/dev/cu.*` callout 设备；旧配置中的 `/dev/tty.*` 会在存在对应 callout 设备时自动迁移
+
+所有槽位都能修改，也可以新增、删除、排序并切换 Text/HEX。`Load` 和 `Export` 使用带版本号的 JSON 命令集文件，只保存命令集名称和槽位，不携带本机容易变化的串口路径。
+
+接收数据每隔几毫秒从 Rust 转发，并在下一显示帧追加到同一个文本节点，视觉上与 CLI 一样连续刷屏，同时避免反复重建整个终端 DOM。UART 原始字节保存到 `/tmp/hush-gui-*.log`，HID 输入报告保存到 `/tmp/hush-gui-hid-*.log`；暂停显示或清屏不会修改原始日志。
+
+DM30 当前固件中的 `set mid=-2,power=on` 只能从 UART / shell 进入，而且设备上电后才会枚举 USB HID。因此 HID 模式会禁用该槽位；其他 DSP 命令仍使用同一批可编辑槽位发送。
+
+一个串口同一时间只能由一个程序持有。连接 GUI 前，需要先关闭已经占用该端口的 CLI 串口终端。
+
+接收区向上滚动、离开底部时会在新数据抢回滚动位置之前自动进入 Smart Pause。滚回底部只会解除滚动触发的暂停；手动暂停仍需手动恢复。
+
 ## 和 tio 的关系
 
 这个工具的定位是对 `tio` 常见使用流程做一层小包装，不是要替代 `tio` 的完整能力。

@@ -8,3 +8,5 @@ publish = false
 [dependencies]
 libc = "0.2"
 serialport = "4.9"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"

@@ -1,2 +1,6 @@
 /target/
 /.DS_Store
+/apps/hush-gui/node_modules/
+/apps/hush-gui/dist/
+/apps/hush-gui/src-tauri/target/
+/apps/hush-gui/src-tauri/gen/schemas/
