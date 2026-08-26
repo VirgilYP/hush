@@ -992,6 +992,32 @@ mod tests {
     }
 
     #[test]
+    fn three_task_hil_bank_is_loadable_and_covers_protocol_boundaries() {
+        let bank: CommandBank = serde_json::from_str(include_str!(
+            "../../../../examples/dm30-three-task-hil.hush-commands.json"
+        ))
+        .unwrap();
+        validate_command_bank(&bank).unwrap();
+        assert_eq!(bank.slots.len(), 12);
+        assert!(bank
+            .slots
+            .iter()
+            .any(|slot| slot.value == "set mid=-2,dsp=-1"));
+        assert!(bank
+            .slots
+            .iter()
+            .any(|slot| slot.value == "set mid=51,p=0,g=-280"));
+        assert!(bank
+            .slots
+            .iter()
+            .any(|slot| slot.value == "set mid=51,p=0,g=0.1"));
+        assert!(bank
+            .slots
+            .iter()
+            .any(|slot| slot.value == "Pawpaw Update Firmware"));
+    }
+
+    #[test]
     fn ui_defaults_select_a_safe_dm30_gain_range_endpoint() {
         let preferences = UiPreferences::default();
         assert_eq!(preferences.dm30_gain_mid, 8);

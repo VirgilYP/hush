@@ -42,6 +42,8 @@ open src-tauri/target/release/bundle/macos/Hush.app
 
 所有槽位都能修改，也可以新增、删除、排序并切换 Text/HEX。`Load` 和 `Export` 使用带版本号的 JSON 命令集文件，只保存命令集名称和槽位，不携带本机容易变化的串口路径。
 
+`examples/dm30-three-task-hil.hush-commands.json` 是用于验收 DM30 `1ACC:1AEC`、`mid=-2,dsp` 和 `mid=51,g=-280..0` 的 12 槽命令集，集中保存合法边界与应当拒绝的反例，可直接通过 `Load` 加载。
+
 接收数据每隔几毫秒从 Rust 转发，并在下一显示帧追加到同一个文本节点，视觉上与 CLI 一样连续刷屏，同时避免反复重建整个终端 DOM。UART 原始字节保存到 `/tmp/hush-gui-*.log`，HID 输入报告保存到 `/tmp/hush-gui-hid-*.log`；暂停显示或清屏不会修改原始日志。
 
 DM30 当前固件中的 `set mid=-2,power=on` 只能从 UART / shell 进入，而且设备上电后才会枚举 USB HID。因此 HID 模式会禁用该槽位；其他 DSP 命令仍使用同一批可编辑槽位发送。

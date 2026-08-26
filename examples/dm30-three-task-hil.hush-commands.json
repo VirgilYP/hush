@@ -1,0 +1,79 @@
+{
+  "format": "hush-command-bank",
+  "version": 1,
+  "name": "DM30 three-task HIL",
+  "slots": [
+    {
+      "id": "power-on",
+      "name": "Power on (UART only)",
+      "mode": "text",
+      "value": "set mid=-2,power=on"
+    },
+    {
+      "id": "report-all",
+      "name": "Report all config",
+      "mode": "text",
+      "value": "set mid=-1"
+    },
+    {
+      "id": "dsp-zero",
+      "name": "DSP status = 0",
+      "mode": "text",
+      "value": "set mid=-2,dsp=0"
+    },
+    {
+      "id": "dsp-seven",
+      "name": "DSP status = 7",
+      "mode": "text",
+      "value": "set mid=-2,dsp=7"
+    },
+    {
+      "id": "dsp-invalid-negative",
+      "name": "Reject DSP status = -1",
+      "mode": "text",
+      "value": "set mid=-2,dsp=-1"
+    },
+    {
+      "id": "mid51-min",
+      "name": "MID 51 port 0 gain = -280 dB",
+      "mode": "text",
+      "value": "set mid=51,p=0,g=-280"
+    },
+    {
+      "id": "mid51-legacy-min",
+      "name": "MID 51 port 0 gain = -200 dB",
+      "mode": "text",
+      "value": "set mid=51,p=0,g=-200"
+    },
+    {
+      "id": "mid51-max",
+      "name": "MID 51 port 0 gain = 0 dB",
+      "mode": "text",
+      "value": "set mid=51,p=0,g=0"
+    },
+    {
+      "id": "mid51-invalid-low",
+      "name": "Reject MID 51 gain = -280.1 dB",
+      "mode": "text",
+      "value": "set mid=51,p=0,g=-280.1"
+    },
+    {
+      "id": "mid51-invalid-high",
+      "name": "Reject MID 51 gain = 0.1 dB",
+      "mode": "text",
+      "value": "set mid=51,p=0,g=0.1"
+    },
+    {
+      "id": "mid51-invalid-port",
+      "name": "Reject MID 51 missing port",
+      "mode": "text",
+      "value": "set mid=51,g=-280"
+    },
+    {
+      "id": "enter-firmware-update",
+      "name": "Enter firmware update mode",
+      "mode": "text",
+      "value": "Pawpaw Update Firmware"
+    }
+  ]
+}

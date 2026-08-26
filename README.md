@@ -61,6 +61,10 @@ reordered. `Load` and `Export` exchange a versioned JSON command-bank file that
 contains the bank name and slots, but deliberately excludes machine-specific
 device paths.
 
+`examples/dm30-three-task-hil.hush-commands.json` is a 12-slot acceptance bank
+for the DM30 `1ACC:1AEC`, `mid=-2,dsp`, and `mid=51,g=-280..0` changes. It keeps
+the accepted boundary values and expected rejection cases in one loadable file.
+
 The current DM30 firmware accepts `set mid=-2,power=on` from UART / shell only,
 and USB HID does not enumerate until the unit is powered. Hush disables that
 slot in HID mode; the remaining DSP commands share the same editable slots.
