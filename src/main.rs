@@ -4,15 +4,24 @@ use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::{self, Read, Write};
 use std::mem;
+#[cfg(unix)]
 use std::os::fd::AsRawFd;
-use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+#[cfg(all(unix, test))]
+use std::os::unix::fs::PermissionsExt;
+#[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
+#[cfg(windows)]
+use uds_windows::{UnixListener, UnixStream};
+#[cfg(windows)]
+mod windows_terminal;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+#[cfg(windows)]
+use windows_terminal::TtyGuard;
 
 const DEFAULT_BAUD: u32 = 3_000_000;
 const INPUT_MAX: usize = 4096;
@@ -210,10 +219,12 @@ struct OutputState {
     hidden: Vec<u8>,
 }
 
+#[cfg(unix)]
 struct TtyGuard {
     saved: libc::termios,
 }
 
+#[cfg(unix)]
 impl TtyGuard {
     fn enter_raw() -> io::Result<Self> {
         unsafe {
@@ -237,6 +248,7 @@ impl TtyGuard {
     }
 }
 
+#[cfg(unix)]
 impl Drop for TtyGuard {
     fn drop(&mut self) {
         unsafe {
@@ -250,10 +262,17 @@ fn default_log_path() -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    format!("/tmp/hush-{secs}.log")
+    hush::runtime_directory()
+        .join(format!("hush-{secs}.log"))
+        .to_string_lossy()
+        .into_owned()
 }
 
 fn default_history_path() -> Option<PathBuf> {
+    #[cfg(windows)]
+    if let Some(local) = env::var_os("LOCALAPPDATA") {
+        return Some(PathBuf::from(local).join("hush/history"));
+    }
     if let Some(state_home) = env::var_os("XDG_STATE_HOME").filter(|path| !path.is_empty()) {
         return Some(PathBuf::from(state_home).join("hush/history"));
     }
@@ -274,12 +293,7 @@ fn open_history(path: &Path) -> io::Result<(CommandHistory, fs::File)> {
         Err(ref err) if err.kind() == io::ErrorKind::NotFound => CommandHistory::default(),
         Err(err) => return Err(err),
     };
-    let file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .mode(0o600)
-        .open(path)?;
-    file.set_permissions(fs::Permissions::from_mode(0o600))?;
+    let file = hush::open_private_log(path)?;
 
     Ok((history, file))
 }
@@ -325,7 +339,10 @@ fn session_name_from_arg(arg: &str) -> String {
 }
 
 fn socket_path_for_session(session_name: &str) -> String {
-    format!("/tmp/hush-{session_name}.sock")
+    hush::runtime_directory()
+        .join(format!("hush-{session_name}.sock"))
+        .to_string_lossy()
+        .into_owned()
 }
 
 fn usage(program: &str) {
@@ -832,7 +849,7 @@ fn run_monitor(config: MonitorConfig) -> io::Result<()> {
 fn active_sessions() -> io::Result<Vec<(String, String)>> {
     let mut sessions = Vec::new();
 
-    for entry in fs::read_dir("/tmp")? {
+    for entry in fs::read_dir(hush::runtime_directory())? {
         let entry = entry?;
         let file_name = entry.file_name();
         let Some(file_name) = file_name.to_str() else {
@@ -872,6 +889,7 @@ fn run_sessions() -> io::Result<()> {
     Ok(())
 }
 
+#[cfg(unix)]
 fn run_interactive_monitor(mut stream: UnixStream) -> io::Result<InteractiveMonitorExit> {
     let _tty = TtyGuard::enter_raw()?;
     let stream_fd = stream.as_raw_fd();
@@ -1154,6 +1172,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
+#[cfg(windows)]
+fn run_interactive_monitor(mut stream: UnixStream) -> io::Result<InteractiveMonitorExit> {
+    let _tty = TtyGuard::enter_raw()?;
+    let (tx, rx) = mpsc::sync_channel::<io::Result<Vec<u8>>>(64);
+    let (input_tx, input_rx) = mpsc::channel();
+    spawn_stdin_reader(input_tx);
+    let mut reader = stream.try_clone()?;
+    thread::spawn(move || {
+        let mut buf = [0_u8; 8192];
+        loop {
+            let event = reader.read(&mut buf).map(|n| buf[..n].to_vec());
+            let done = event.as_ref().map_or(true, |data| data.is_empty());
+            if tx.send(event).is_err() || done {
+                break;
+            }
+        }
+    });
+    let result = (|| {
+        let mut stdout = io::stdout().lock();
+        loop {
+            // Limit input per iteration so a busy keyboard cannot starve output.
+            for _ in 0..256 {
+                match input_rx.try_recv() {
+                    Ok(0x1d) => return Ok(InteractiveMonitorExit::Detached),
+                    Ok(byte) => stream.write_all(&[byte])?,
+                    Err(mpsc::TryRecvError::Empty) => break,
+                    Err(mpsc::TryRecvError::Disconnected) => {
+                        return Ok(InteractiveMonitorExit::Detached)
+                    }
+                }
+            }
+            match rx.recv_timeout(Duration::from_millis(10)) {
+                Ok(Ok(data)) if data.is_empty() => {
+                    return Ok(InteractiveMonitorExit::PrimaryClosed)
+                }
+                Ok(Ok(data)) => {
+                    stdout.write_all(&data)?;
+                    stdout.flush()?;
+                }
+                Ok(Err(error)) => return Err(error),
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                    return Ok(InteractiveMonitorExit::PrimaryClosed)
+                }
+            }
+        }
+    })();
+    let _ = stream.shutdown(std::net::Shutdown::Both);
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1258,6 +1327,34 @@ mod tests {
     }
 
     #[test]
+    fn monitor_socket_roundtrip_duplicate_owner_and_cleanup() {
+        let path = socket_path_for_session(&format!("test-{}", std::process::id()));
+        let listener = bind_monitor_listener(&path).unwrap();
+        assert_eq!(
+            bind_monitor_listener(&path).unwrap_err().kind(),
+            io::ErrorKind::AddrInUse
+        );
+        // The duplicate-owner liveness probe connected without sending input.
+        let (probe, _) = listener.accept().unwrap();
+        drop(probe);
+        let mut client = UnixStream::connect(&path).unwrap();
+        let (mut server, _) = listener.accept().unwrap();
+        client.write_all(b"help\r").unwrap();
+        let mut input = [0; 5];
+        server.read_exact(&mut input).unwrap();
+        assert_eq!(&input, b"help\r");
+        server.write_all(b"uart:~$ ").unwrap();
+        let mut output = [0; 8];
+        client.read_exact(&mut output).unwrap();
+        assert_eq!(&output, b"uart:~$ ");
+        drop(client);
+        drop(server);
+        drop(listener);
+        fs::remove_file(&path).unwrap();
+        assert!(!Path::new(&path).exists());
+    }
+
+    #[test]
     fn persists_history_and_loads_it_after_reopen() {
         let directory = env::temp_dir().join(format!(
             "hush-history-test-{}-{}",
@@ -1279,6 +1376,7 @@ mod tests {
             reopened.navigate(HistoryDirection::Previous, b""),
             Some(b"persisted command".to_vec())
         );
+        #[cfg(unix)]
         assert_eq!(file.metadata().unwrap().permissions().mode() & 0o777, 0o600);
         drop(file);
 
