@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serialport::{DataBits, FlowControl, Parity, SerialPort, SerialPortType, StopBits};
 use std::fs::{self, OpenOptions};
 use std::io::{self, Read, Write};
+#[cfg(unix)]
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -374,7 +375,9 @@ pub fn parse_hex(value: &str) -> Result<Vec<u8>, HushError> {
 
     compact
         .as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .enumerate()
         .map(|(index, pair)| {
             let text = std::str::from_utf8(pair).expect("HEX input is ASCII-sized");
@@ -390,18 +393,30 @@ pub fn default_log_path() -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    PathBuf::from(format!("/tmp/hush-gui-{timestamp}.log"))
+    runtime_directory().join(format!("hush-gui-{timestamp}.log"))
 }
 
-fn open_private_log(path: &Path) -> io::Result<fs::File> {
+pub fn runtime_directory() -> PathBuf {
+    #[cfg(unix)]
+    {
+        PathBuf::from("/tmp")
+    }
+    #[cfg(windows)]
+    {
+        std::env::temp_dir()
+    }
+}
+
+pub fn open_private_log(path: &Path) -> io::Result<fs::File> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    let file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .mode(0o600)
-        .open(path)?;
+    let mut options = OpenOptions::new();
+    options.create(true).append(true);
+    #[cfg(unix)]
+    options.mode(0o600);
+    let file = options.open(path)?;
+    #[cfg(unix)]
     file.set_permissions(fs::Permissions::from_mode(0o600))?;
     Ok(file)
 }

@@ -1,0 +1,82 @@
+HOST=LYP
+rustc 1.98.1 (48a229cea 2026-09-01)
+binary: rustc
+commit-hash: 48a229ceaefd4985c50990b14116b6d856af0985
+commit-date: 2026-09-01
+host: x86_64-pc-windows-msvc
+release: 1.98.1
+LLVM version: 22.1.8
+
+[32;1mAlgorithm      [0m[32;1m Hash                                                                  [0m[32;1m Path[0m
+[32;1m---------      [0m [32;1m----                                                                  [0m [32;1m----[0m
+SHA256          BB8E77BBE7C73D8067EE72ED2090D937EE7422A0C51E07970DC1C75AC5339FF7       C:\Users\41478\driver-env\hush-…
+SHA256          340A87AAF79F4B8507873D78A4F125BDB3194BFAD7785920160A0F818E107355       C:\Users\41478\driver-env\hush-…
+SHA256          887F9BE066A15585A2C583578E84B0FCB541126D81546276BAD3D2FF00D61167       C:\Users\41478\driver-env\hush-…
+SHA256          CE6CE6F823C6CD92A03A8FF8827E67C53B73FD3296BC87FFA35AC81972CFE446       C:\Users\41478\driver-env\hush-…
+SHA256          05B3E8D4D9F5CDF90FE6D9D968B6BFD4678850ABB069AD948B3982A06ECADA37       C:\Users\41478\driver-env\hush-…
+SHA256          75BCF8FEEB724C42A00A8716D9C40610A163FB166C5A4783AA9CAA4B88E6FD69       C:\Users\41478\driver-env\hush-…
+    Checking hush v0.1.0 (C:\Users\41478\driver-env\hush-windows)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.45s
+   Compiling hush v0.1.0 (C:\Users\41478\driver-env\hush-windows)
+
+running 4 tests
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.08s
+     Running unittests src\lib.rs (target\debug\deps\hush-94af35041b444a61.exe)
+test tests::hex_payload_accepts_spaced_and_contiguous_bytes ... ok
+test tests::hex_payload_rejects_odd_and_non_hex_input ... ok
+test tests::hex_payload_never_appends_a_line_ending ... ok
+test tests::text_payload_appends_the_selected_line_ending ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 7 tests
+test tests::consumes_a_complete_non_history_csi_sequence ... ok
+test tests::navigates_history_and_restores_the_draft ... ok
+test tests::parses_up_and_down_arrow_sequences ... ok
+test tests::records_only_non_empty_commands_and_resets_navigation ... ok
+test tests::loads_only_the_most_recent_valid_history_entries ... ok
+test tests::persists_history_and_loads_it_after_reopen ... ok
+test tests::monitor_socket_roundtrip_duplicate_owner_and_cleanup ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\main.rs (target\debug\deps\hush-786090082200f3dc.exe)
+   Doc-tests hush
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+    Checking hush v0.1.0 (C:\Users\41478\driver-env\hush-windows)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.68s
+   Compiling proc-macro2 v1.0.106
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.45
+   Compiling windows_x86_64_msvc v0.52.6
+   Compiling autocfg v1.5.1
+   Compiling getrandom v0.4.3
+   Compiling cfg-if v1.0.4
+   Compiling serde_core v1.0.229
+   Compiling libc v0.2.186
+   Compiling thiserror v2.0.18
+   Compiling fastrand v2.5.0
+   Compiling once_cell v1.21.4
+   Compiling serde v1.0.229
+   Compiling windows-link v0.2.1
+   Compiling scopeguard v1.2.0
+   Compiling memoffset v0.9.1
+   Compiling windows-sys v0.61.2
+   Compiling windows-targets v0.52.6
+   Compiling windows-sys v0.52.0
+   Compiling syn v2.0.117
+   Compiling syn v3.0.4
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.18
+   Compiling tempfile v3.27.0
+   Compiling serialport v4.9.0
+   Compiling uds_windows v1.2.1
+   Compiling hush v0.1.0 (C:\Users\41478\driver-env\hush-windows)
+SHA256          12A5E21AB70BA5957A38FA7F75D3C36B7965E88AAE02E9431542DA25068D21CA       C:\Users\41478\driver-env\hush-…
+
+    Finished `release` profile [optimized] target(s) in 10.80s

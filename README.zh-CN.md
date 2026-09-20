@@ -233,3 +233,26 @@ hush monitor --read-only dut-c
 - 命令历史会跨 `hush` 会话持久化保存：设置了 `XDG_STATE_HOME` 时使用 `$XDG_STATE_HOME/hush/history`，否则使用 `~/.local/state/hush/history`。每次启动会载入最近 1000 条命令。浏览到最新命令后继续按 ↓，会恢复开始浏览历史前尚未发送的输入草稿。
 - 默认命令行结束符是 carriage return，也就是 `cr` / `\r`，这是很多嵌入式 UART shell 的常见输入方式。
 - 如果你的 shell 需要 LF 或 CRLF，可以使用 `--newline lf` 或 `--newline crlf`。
+
+## Mac / Windows 统一终端
+
+CLI在macOS和Windows使用同一套命令及快捷键。Windows原生串口示例：
+
+```sh
+hush COM56 --session dut
+hush monitor dut
+hush monitor --read-only dut
+hush sessions
+```
+
+默认3,000,000 baud；Mac只需把COM56换成对应的`/dev/cu.*`路径。空Enter等待设备`$`并暂停显示，输入shell命令后Enter发送，↑/↓选择本机历史。Ctrl-T r恢复实时显示，Ctrl-T q退出主窗口；互动monitor用Ctrl-]单独退出。所有互动窗口共享一个设备输入流，不要同时输入。只读monitor不发送键盘输入。
+
+Windows CLI要求支持AF_UNIX的Windows 10/11和原生控制台（Windows Terminal或`ssh -t`）；与Mac一样使用本机socket，无TCP监听。实现参考[uds_windows](https://docs.rs/uds_windows/1.2.1/uds_windows/)及[Windows console modes](https://learn.microsoft.com/en-us/windows/console/setconsolemode)。日志和socket在Mac `/tmp`、Windows `%TEMP%`；历史在Mac XDG/HOME、Windows `%LOCALAPPDATA%/hush/history`。Windows文件继承用户目录ACL，不套用Unix chmod。端口baud/8N1/flow设置共享同一serialport核心。
+
+使用仓库固定Rust 1.98.1构建：`cargo build --release --locked`。Windows将hush.exe安装到用户`.local/bin`并登记用户PATH：
+
+```powershell
+pwsh -File scripts/windows/install.ps1 -Source target/release/hush.exe -Sha256 <SHA256>
+```
+
+普通终端执行`hush`，无需Python或tio。现有窗口可能需要重开才看到PATH。串口验证记录见[Windows console验收](docs/verification/windows-console/README.md)。此次统一的是CLI和串口核心；未构建/发布Windows Tauri GUI。

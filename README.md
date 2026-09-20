@@ -280,3 +280,18 @@ driving the device.
 - The default command line ending is carriage return (`cr`, `\r`), which is
   common for embedded UART shells.
 - If your shell expects LF or CRLF, use `--newline lf` or `--newline crlf`.
+
+## Native Windows CLI
+
+The same CLI now runs on macOS and Windows. Use `hush COM56 --session dut`
+(default 3 Mbaud), `hush monitor dut`, `hush monitor --read-only dut`, and
+`hush sessions`. Only the serial device path differs on macOS. Enter waits for
+the device prompt, Up/Down select history, Ctrl-T r resumes output, Ctrl-T q
+closes the primary, and Ctrl-] detaches an interactive monitor. All interactive
+windows share the same input stream.
+
+Windows uses native console modes and AF_UNIX sockets via uds_windows (Windows
+10/11), not TCP. Logs/sockets live in `%TEMP%`, history in `%LOCALAPPDATA%`.
+Build with the pinned Rust 1.98.1 and install using `scripts/windows/install.ps1`.
+See [validation](docs/verification/windows-console/README.md). Windows Tauri GUI
+packaging is outside this CLI change.
